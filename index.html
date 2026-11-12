@@ -90,6 +90,16 @@ header p{margin:0 0 28px;color:var(--muted);max-width:56ch}
 .mistakes .e{font-family:Montserrat,Arial,sans-serif;font-weight:700}
 .mistakes sup{font-size:.7em}
 footer{margin-top:22px;color:var(--muted);font-size:14px}
+.who{display:flex;gap:10px;align-items:center;margin:-12px 0 20px;color:var(--muted);font-size:16px}
+.who[hidden]{display:none}
+.who b{color:var(--ink)}
+.linkbtn{font:inherit;background:none;border:0;color:var(--plus);cursor:pointer;text-decoration:underline;padding:0}
+.namef label{display:block;font-family:Montserrat,Arial,sans-serif;font-weight:700;font-size:22px;margin-bottom:6px}
+.namef p{margin:0 0 14px;color:var(--muted)}
+.namef input{font:inherit;font-size:20px;width:100%;max-width:440px;padding:12px 14px;border:2px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);margin-bottom:14px;display:block}
+.namef input:focus-visible{outline:3px solid var(--plus);outline-offset:1px}
+.namef .err{color:var(--bad);font-size:15px;min-height:1.4em;margin:-6px 0 10px}
+.sent{font-size:15px;color:var(--muted);margin:4px 0 0}
 @media (max-width:560px){
   .levels{grid-template-columns:1fr}
   .sheet{padding:20px 16px}
@@ -104,6 +114,7 @@ footer{margin-top:22px;color:var(--muted);font-size:14px}
     <h1>Бүтін сандар</h1>
     <p>Деңгейді таңда, есепті дәптерге шешіп, дұрыс жауапты бас. Әр жолы есептер жаңарады, жауаптан кейін шешуі шығады.</p>
   </header>
+  <div class="who" id="who" hidden></div>
 
   <div class="levels" role="group" aria-label="Деңгей">
     <button class="lvl" data-l="1" aria-pressed="true"><b>Жеңіл</b><span>Таңбалар, амалдар реті, модуль</span><small data-best="1"></small></button>
@@ -232,10 +243,49 @@ const best=l=>{try{return Number(localStorage.getItem("butin-best-"+l))||0}catch
 const saveBest=(l,s)=>{try{if(s>best(l))localStorage.setItem("butin-best-"+l,String(s))}catch(e){}};
 function paintBest(){document.querySelectorAll("[data-best]").forEach(el=>{const b=best(el.dataset.best);el.textContent=b?`Ең жақсы нәтиже: ${b}/${N}`:""})}
 
+/* ---------- оқушы және нәтижені жіберу ---------- */
+/* Google Apps Script веб-қосымшасының сілтемесін осы жерге қойыңыз (…/exec) */
+const SCRIPT_URL="https://script.google.com/macros/s/AKfycbx6lXxtAkc2UthjP6QLAmLT8wmT-yxrepb1R3NHrq7QxxIwJc5jB_jx50irY1xHTcJzpQ/exec";
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let NAME=(()=>{try{return localStorage.getItem("butin-name")||""}catch(e){return ""}})();
+const who=document.getElementById("who");
+function renderWho(){
+  who.hidden=!NAME;
+  if(!NAME)return;
+  who.innerHTML=`Оқушы: <b>${esc(NAME)}</b> <button class="linkbtn" id="chg">өзгерту</button>`;
+  document.getElementById("chg").addEventListener("click",()=>askName(()=>start(S.l||1)));
+}
+function askName(next){
+  sheet.innerHTML=`<form class="namef" id="nf" novalidate>
+    <label for="nm">Аты-жөніңді жаз</label>
+    <p>Нәтижең мұғалімге осы атпен жіберіледі.</p>
+    <input id="nm" autocomplete="name" maxlength="60" placeholder="Мысалы: Айым Серікқызы" value="${esc(NAME)}">
+    <div class="err" id="ne"></div>
+    <button class="go" type="submit">Бастау</button></form>`;
+  const inp=document.getElementById("nm");inp.focus();
+  document.getElementById("nf").addEventListener("submit",ev=>{
+    ev.preventDefault();const v=inp.value.trim().replace(/\s+/g," ");
+    if(v.length<2){document.getElementById("ne").textContent="Атыңды толық жаз (кемінде 2 әріп).";return}
+    NAME=v;try{localStorage.setItem("butin-name",v)}catch(e){}
+    renderWho();next();
+  });
+}
+const plain=h=>h.replace(/<span class="note">(.*?)<\/span>/,"$1 ").replace(/<sup>(.*?)<\/sup>/g,"^$1").replace(/<[^>]+>/g,"").replace(/\s+/g," ").trim();
+async function sendResult(){
+  if(!SCRIPT_URL)return "none";
+  const mistakes=S.qs.filter((t,k)=>S.res[k]===false).map(t=>`${plain(t.q)} = ${m(t.ans)}`).join("; ");
+  try{
+    await fetch(SCRIPT_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify({name:NAME,level:NAMES[S.l],score:S.score,total:N,mistakes})});
+    return "ok";
+  }catch(e){return "err"}
+}
+
 /* ---------- state & render ---------- */
 const sheet=document.getElementById("sheet");
 let S={};
 function start(l){
+  if(!NAME){S.l=l;return askName(()=>start(l))}
   S={l,qs:makeRound(l),i:0,score:0,res:[],done:false};
   document.querySelectorAll(".lvl").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.l==l)));
   renderQ();
@@ -275,16 +325,19 @@ function renderEnd(){
     <p class="task-label">${NAMES[S.l]} деңгей аяқталды</p>
     <div class="big">${S.score}/${N}</div>
     <p>${msg}</p>
+    <p class="sent" id="sent">${SCRIPT_URL?"Нәтиже мұғалімге жіберілуде…":""}</p>
     ${wrong.length?`<ul class="mistakes">${wrong.map(o=>`<li><span class="e">${o.t.q.replace(/<span class="note">.*?<\/span>/,"")}</span> → дұрыс жауап: <b>${m(o.t.ans)}</b></li>`).join("")}</ul>`:""}
     <div class="actions">
       <button class="go" id="again">Жаңа есептермен қайталау</button>
       ${nextL&&S.score>=7?`<button class="ghost" id="up">${NAMES[nextL]} деңгейге өту</button>`:""}
     </div></div>`;
+  if(!S.sent){S.sent=true;sendResult().then(r=>{const el=document.getElementById("sent");if(!el)return;
+    el.textContent=r==="ok"?`Нәтиже мұғалімге жіберілді (${NAME}).`:r==="err"?"Нәтиже жіберілмеді: интернетті тексеріп, деңгейді қайта өт.":""})}
   document.getElementById("again").addEventListener("click",()=>start(S.l));
   const up=document.getElementById("up");if(up)up.addEventListener("click",()=>start(nextL));
 }
 document.querySelectorAll(".lvl").forEach(b=>b.addEventListener("click",()=>start(Number(b.dataset.l))));
-paintBest();start(1);
+paintBest();renderWho();start(1);
 })();
 </script>
 </body>
