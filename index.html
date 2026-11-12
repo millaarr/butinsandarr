@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Бүтін сандар — жаттықтырғыш</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&family=PT+Sans:wght@400;700&display=swap">
+<style>
+:root{
+  --paper:#f3f6fb; --grid:#dde5f2; --card:#fbfcfe; --ink:#1b2540; --muted:#5a6580;
+  --plus:#2456c9; --minus:#c45a16; --ok:#1d7349; --ok-bg:#e3f3ea; --bad:#b4471a; --bad-bg:#fbebe1;
+  --line:#cfd8e8; --btn:#1b2540; --btn-ink:#f3f6fb;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#141a2a; --grid:#1f2840; --card:#1a2236; --ink:#e8edf7; --muted:#a3aec6;
+    --plus:#7ea3f2; --minus:#f0a066; --ok:#7fd3a6; --ok-bg:#16352a; --bad:#f3a27a; --bad-bg:#3a2218;
+    --line:#2d3954; --btn:#e8edf7; --btn-ink:#141a2a; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#141a2a; --grid:#1f2840; --card:#1a2236; --ink:#e8edf7; --muted:#a3aec6;
+  --plus:#7ea3f2; --minus:#f0a066; --ok:#7fd3a6; --ok-bg:#16352a; --bad:#f3a27a; --bad-bg:#3a2218;
+  --line:#2d3954; --btn:#e8edf7; --btn-ink:#141a2a; color-scheme:dark;
+}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0;min-height:100vh;color:var(--ink);font-family:"PT Sans",Arial,sans-serif;font-size:18px;line-height:1.5;
+  background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:28px 28px;
+}
+.wrap{max-width:760px;margin:0 auto;padding:32px 20px 64px}
+header h1{font-family:Montserrat,Arial,sans-serif;font-weight:800;font-size:clamp(34px,6vw,52px);line-height:1.05;margin:0 0 8px;letter-spacing:-0.5px}
+header p{margin:0 0 28px;color:var(--muted);max-width:56ch}
+.levels{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:28px}
+.lvl{
+  font:inherit;text-align:left;cursor:pointer;color:var(--ink);background:var(--card);border:2px solid var(--line);
+  border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:2px;
+}
+.lvl b{font-family:Montserrat,Arial,sans-serif;font-size:19px}
+.lvl span{font-size:14px;color:var(--muted);line-height:1.3}
+.lvl small{font-size:13px;color:var(--muted)}
+.lvl[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.lvl:focus-visible,.opt:focus-visible,.go:focus-visible,.ghost:focus-visible{outline:3px solid var(--plus);outline-offset:2px}
+.sheet{background:var(--card);border:2px solid var(--line);border-radius:20px;padding:28px 28px 24px}
+.meta{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;color:var(--muted);font-size:15px}
+.dots{display:flex;gap:6px}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--line)}
+.dot.ok{background:var(--ok)} .dot.bad{background:var(--bad)} .dot.now{outline:2px solid var(--ink);outline-offset:2px}
+.task-label{font-size:16px;color:var(--muted);margin:0 0 6px}
+.expr{
+  font-family:Montserrat,Arial,sans-serif;font-weight:700;font-size:clamp(28px,5.4vw,46px);line-height:1.25;
+  margin:0 0 26px;overflow-x:auto;white-space:nowrap;padding-bottom:4px
+}
+.expr.wrapok{white-space:normal}
+.expr sup{font-size:.6em;vertical-align:.75em;line-height:0}
+.note{display:block;font-family:"PT Sans",Arial,sans-serif;font-weight:400;font-size:18px;color:var(--muted);margin-bottom:6px;white-space:normal}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.opt{
+  font-family:Montserrat,Arial,sans-serif;font-weight:700;font-size:26px;cursor:pointer;color:var(--ink);
+  background:var(--paper);border:2px solid var(--line);border-radius:14px;padding:16px;min-height:68px;
+  display:flex;align-items:center;gap:14px;transition:border-color .15s
+}
+.opt .k{font-family:"PT Sans",Arial,sans-serif;font-weight:700;font-size:15px;color:var(--muted);width:22px}
+.opt:hover:not(:disabled){border-color:var(--ink)}
+.opt:disabled{cursor:default}
+.opt.right{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
+.opt.wrong{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
+.feedback{margin-top:22px;display:none}
+.feedback.show{display:block}
+.verdict{font-family:Montserrat,Arial,sans-serif;font-weight:800;font-size:22px;margin:0 0 10px}
+.verdict.ok{color:var(--ok)} .verdict.bad{color:var(--bad)}
+.solution{border-left:4px solid var(--plus);padding:4px 0 4px 16px;margin:0 0 20px}
+.solution h3{margin:0 0 6px;font-size:16px;color:var(--muted);font-weight:700}
+.solution ol{margin:0;padding-left:20px}
+.solution li{margin:4px 0}
+.solution sup{font-size:.7em}
+.actions{display:flex;gap:12px;flex-wrap:wrap}
+.go{font:inherit;font-weight:700;font-size:17px;cursor:pointer;background:var(--btn);color:var(--btn-ink);border:0;border-radius:12px;padding:13px 22px}
+.ghost{font:inherit;font-weight:700;font-size:17px;cursor:pointer;background:transparent;color:var(--ink);border:2px solid var(--line);border-radius:12px;padding:11px 20px}
+.result{text-align:left}
+.big{font-family:Montserrat,Arial,sans-serif;font-weight:800;font-size:clamp(64px,14vw,120px);line-height:1;margin:6px 0 4px}
+.result p{margin:0 0 6px}
+.mistakes{margin:18px 0 22px;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.mistakes li{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:16px}
+.mistakes .e{font-family:Montserrat,Arial,sans-serif;font-weight:700}
+.mistakes sup{font-size:.7em}
+footer{margin-top:22px;color:var(--muted);font-size:14px}
+@media (max-width:560px){
+  .levels{grid-template-columns:1fr}
+  .sheet{padding:20px 16px}
+  .opt{font-size:22px}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Бүтін сандар</h1>
+    <p>Деңгейді таңда, есепті дәптерге шешіп, дұрыс жауапты бас. Әр жолы есептер жаңарады, жауаптан кейін шешуі шығады.</p>
+  </header>
+
+  <div class="levels" role="group" aria-label="Деңгей">
+    <button class="lvl" data-l="1" aria-pressed="true"><b>Жеңіл</b><span>Таңбалар, амалдар реті, модуль</span><small data-best="1"></small></button>
+    <button class="lvl" data-l="2" aria-pressed="false"><b>Орташа</b><span>Жақша, дәреже, бірнеше амал</span><small data-best="2"></small></button>
+    <button class="lvl" data-l="3" aria-pressed="false"><b>Қиын</b><span>Өрнектің мәні, көп қабатты жақша, теңдеу</span><small data-best="3"></small></button>
+  </div>
+
+  <main class="sheet" id="sheet" aria-live="polite"></main>
+  <footer>Бір деңгейде 10 есеп. Тақырып: теріс сандармен амалдар, дәреже, модуль, амалдар реті.</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ---------- helpers ---------- */
+const R=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const nz=(a,b)=>{let x;do{x=R(a,b)}while(x===0);return x};
+const nzn=(a,b,ban)=>{let x;do{x=R(a,b)}while(x===0||ban.includes(x));return x};
+const pick=a=>a[R(0,a.length-1)];
+const m=n=>{n=n===0?0:n;return (n<0?"−":"")+Math.abs(n)};
+const p=n=>n<0?"("+m(n)+")":m(n);
+const sup=(b,e)=>b+"<sup>"+e+"</sup>";
+const ab=n=>"|"+m(n)+"|";
+const pw=(b,e)=>Math.pow(b,e);
+const isInt=x=>Number.isFinite(x)&&Number.isInteger(x);
+const pm=n=>n<0?" − "+Math.abs(n):" + "+n;      /* "+ 5" or "− 5" */
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=R(0,i);[a[i],a[j]]=[a[j],a[i]]}return a};
+
+/* ---------- LEVEL 1 ---------- */
+const L1=[
+ ()=>{const a=nz(-90,90),b=-R(12,90),c=-R(5,60),ans=a-b+c;
+   return{q:`${m(a)} − ${p(b)} + ${p(c)}`,ans,wr:[a+b+c,a-b-c,-ans],
+   sol:[`Азайтуды қосуға айналдырамыз: ${m(a)} + ${Math.abs(b)} − ${Math.abs(c)}`,`${m(a+Math.abs(b))} − ${Math.abs(c)} = ${m(ans)}`]}},
+ ()=>{let a,b,c;do{a=nz(-9,9);b=-R(2,9);c=nz(-9,9)}while(a*b*c===0);const d=-R(2,6);const ans=a*b*c*d;
+   const k=[a,b,c,d].filter(x=>x<0).length;
+   return{q:`${p(a)}·${p(b)}·${p(c)}·${p(d)}`,ans,wr:[-ans,a*b+c*d,Math.abs(ans)===ans?-ans+2:ans+2],
+   sol:[`Минус саны: ${k} — ${k%2?"тақ, жауап теріс":"жұп, жауап оң"}`,`Модульдерін көбейтеміз: ${Math.abs(a)}·${Math.abs(b)}·${Math.abs(c)}·${Math.abs(d)} = ${Math.abs(ans)}`,`Жауап: ${m(ans)}`]}},
+ ()=>{const b=nzn(-9,9,[1,-1]),q=nz(-12,12),a=b*q,c=-R(2,9),ans=q*c;const alt=a/(b*c);
+   return{q:`${m(a)} : ${p(b)} · ${p(c)}`,ans,wr:[isInt(alt)?alt:ans+c,-ans,q+c],
+   sol:[`Бөлу мен көбейту бір деңгейде — солдан оңға орындаймыз`,`${m(a)} : ${p(b)} = ${m(q)}`,`${m(q)} · ${p(c)} = ${m(ans)}`]}},
+ ()=>{const a=R(2,5),n=R(2,5),x=pw(-a,n),y=pw(a,n),ans=x-y;
+   return{q:`${sup("(−"+a+")",n)} − ${sup(a,n)}`,ans,wr:[-y-y,0===ans?2*y:0,-ans,x+y],
+   sol:[`${sup("(−"+a+")",n)} = ${m(x)} (дәреже ${n%2?"тақ — таңба сақталады":"жұп — жауап оң"})`,`${sup(a,n)} = ${y}`,`${m(x)} − ${y} = ${m(ans)}`]}},
+ ()=>{const a=nz(-40,40),b=nz(-12,12),c=-R(2,7),ans=Math.abs(a)-Math.abs(b)*c;
+   return{q:`${ab(a)} − ${ab(b)}·${p(c)}`,ans,wr:[a-b*c,(Math.abs(a)-Math.abs(b))*c,Math.abs(a)+Math.abs(b)*c],
+   sol:[`${ab(a)} = ${Math.abs(a)}, ${ab(b)} = ${Math.abs(b)}`,`Алдымен көбейту: ${Math.abs(b)}·${p(c)} = ${m(Math.abs(b)*c)}`,`${Math.abs(a)} − ${p(Math.abs(b)*c)} = ${m(ans)}`]}},
+ ()=>{const a=nz(-30,30),b=-R(2,9),c=-R(2,9),d=R(2,12),ans=a-b*c+d;
+   return{q:`${m(a)} − ${p(b)}·${p(c)} + ${d}`,ans,wr:[(a-b)*c+d,a+b*c+d,a-b*c-d],
+   sol:[`Алдымен көбейту: ${p(b)}·${p(c)} = ${b*c}`,`${m(a)} − ${b*c} + ${d} = ${m(ans)}`]}}
+];
+
+/* ---------- LEVEL 2 ---------- */
+const L2=[
+ ()=>{const a=nz(-30,30),b=nzn(-9,9,[1,-1]),c=nz(-15,15),d=-R(2,15),inn=c-d,ans=a-b*inn;
+   return{q:`${m(a)} − ${p(b)}·(${m(c)} − ${p(d)})`,ans,wr:[(a-b)*inn,a-b*(c+d),a+b*inn],
+   sol:[`Жақша: ${m(c)} − ${p(d)} = ${m(c)} + ${Math.abs(d)} = ${m(inn)}`,`Көбейту: ${p(b)}·${p(inn)} = ${m(b*inn)}`,`${m(a)} − ${p(b*inn)} = ${m(ans)}`]}},
+ ()=>{const a=R(2,7),b=R(2,4),k=R(5,25),t1=-(a*a),t2=pw(-b,3),t3=pw(-1,k),ans=t1-t2+t3;
+   return{q:`−${sup(a,2)} − ${sup("(−"+b+")",3)} + ${sup("(−1)",k)}`,ans,wr:[a*a-t2+t3,t1+t2+t3,t1-t2-t3],
+   sol:[`−${sup(a,2)} = ${m(t1)} (жақша жоқ, минус сыртта)`,`${sup("(−"+b+")",3)} = ${m(t2)}, ал алдында минус: −(${m(t2)}) = ${m(-t2)}`,`${sup("(−1)",k)} = ${m(t3)} (${k%2?"тақ":"жұп"} дәреже)`,`${m(t1)} + ${m(-t2)} ${t3<0?"− 1":"+ 1"} = ${m(ans)}`]}},
+ ()=>{const d=nzn(-9,9,[1,-1]),qq=nz(-12,12),inn=qq*d,a=nz(-12,12),b=-R(2,9),c=a*b-inn;const alt=(a*b+c)/d;
+   return{q:`(${m(a)}·${p(b)} − ${p(c)}) : ${p(d)}`,ans:qq,wr:[-qq,isInt(alt)?alt:qq+d,qq-d],
+   sol:[`Жақша ішінде алдымен көбейту: ${m(a)}·${p(b)} = ${m(a*b)}`,`${m(a*b)} − ${p(c)} = ${m(inn)}`,`${m(inn)} : ${p(d)} = ${m(qq)}`]}},
+ ()=>{const a=nz(-25,10),b=R(5,25),c=nz(-12,12),d=-R(2,6),inn=a-b,ans=Math.abs(inn)-Math.abs(c)*d;
+   return{q:`|${m(a)} − ${b}| − ${ab(c)}·${p(d)}`,ans,wr:[inn-Math.abs(c)*d,Math.abs(inn)+Math.abs(c)*d,Math.abs(a)-b-Math.abs(c)*d],
+   sol:[`Модуль ішінде: ${m(a)} − ${b} = ${m(inn)}, яғни |${m(inn)}| = ${Math.abs(inn)}`,`${ab(c)}·${p(d)} = ${Math.abs(c)}·${p(d)} = ${m(Math.abs(c)*d)}`,`${Math.abs(inn)} − ${p(Math.abs(c)*d)} = ${m(ans)}`]}},
+ ()=>{const n=R(2,5),k=R(2,3),x=pw(-2,n),y=pw(3,k),ans=x*(-y);
+   return{q:`${sup("(−2)",n)} · (−${sup(3,k)})`,ans,wr:[-ans,x*pw(-3,k)===ans?pw(2,n)*y+2:x*pw(-3,k),pw(2,n)*-y===ans?-ans+4:pw(2,n)*-y],
+   sol:[`${sup("(−2)",n)} = ${m(x)}`,`−${sup(3,k)} = ${m(-y)} (минус жақшадан тыс)`,`${p(x)}·${p(-y)} = ${m(ans)}`]}},
+ ()=>{const c=nzn(-9,9,[1,-1]),t=nz(-9,9),b=c*t,d=-R(2,8),a=nz(-40,40),ans=a-t*d;const alt=b/(c*d);
+   return{q:`${m(a)} − ${p(b)} : ${p(c)} · ${p(d)}`,ans,wr:[isInt(alt)?a-alt:ans+d,a+t*d,(a-b)/c*d===Math.round((a-b)/c*d)?(a-b)/c*d:-ans],
+   sol:[`Солдан оңға: ${p(b)} : ${p(c)} = ${m(t)}`,`${m(t)} · ${p(d)} = ${m(t*d)}`,`${m(a)} − ${p(t*d)} = ${m(ans)}`]}}
+];
+
+/* ---------- LEVEL 3 ---------- */
+const L3=[
+ ()=>{let x,y;do{x=nz(-5,5);y=nz(-4,4)}while(x>0&&y>0);
+   const t1=2*x*x,t2=-3*x*y,t3=pw(y,3),ans=t1+t2+t3;
+   return{q:`<span class="note">x = ${m(x)}, y = ${m(y)} болғанда өрнектің мәнін тап:</span>2x<sup>2</sup> − 3xy + y<sup>3</sup>`,wrap:true,ans,
+   wr:[-t1+t2+t3,t1-t2+t3,t1+t2-t3],
+   sol:[`2·${sup(p(x),2)} = 2·${x*x} = ${t1}`,`−3·${p(x)}·${p(y)} = ${m(t2)}`,`${sup(p(y),3)} = ${m(t3)}`,`${t1}${pm(t2)}${pm(t3)} = ${m(ans)}`]}},
+ ()=>{let x,y;do{x=nz(-4,4);y=nz(-5,5)}while(x>0&&y>0);
+   const t1=-pw(x,3),t2=4*x*x*y,t3=-(y*y),ans=t1+t2+t3;
+   return{q:`<span class="note">x = ${m(x)}, y = ${m(y)} болғанда өрнектің мәнін тап:</span>−x<sup>3</sup> + 4x<sup>2</sup>y − y<sup>2</sup>`,wrap:true,ans,
+   wr:[pw(x,3)+t2+t3,t1+t2+y*y,t1-t2+t3],
+   sol:[`−${sup(p(x),3)} = −(${m(pw(x,3))}) = ${m(t1)}`,`4·${sup(p(x),2)}·${p(y)} = 4·${x*x}·${p(y)} = ${m(t2)}`,`−${sup(p(y),2)} = −${y*y}`,`${m(t1)}${pm(t2)}${pm(t3)} = ${m(ans)}`]}},
+ ()=>{const a=nz(-15,15),b=nz(-15,15),c=nz(-15,15),d=-R(2,12),e=nzn(-5,5,[1,-1]);
+   const i1=c-d,i2=b-i1,i3=a-i2,ans=-i3*e;const w1=-(a-(b-c-d))*e;
+   return{q:`−[${m(a)} − (${m(b)} − (${m(c)} − ${p(d)}))]·${p(e)}`,ans,wr:[i3*e,w1===ans?ans+2*e:w1,-(a-b+c+d)*e===ans?ans-e:-(a-b+c+d)*e],
+   sol:[`Ең ішкі жақша: ${m(c)} − ${p(d)} = ${m(i1)}`,`${m(b)} − ${p(i1)} = ${m(i2)}`,`${m(a)} − ${p(i2)} = ${m(i3)}`,`−[${m(i3)}]·${p(e)} = ${m(-i3)}·${p(e)} = ${m(ans)}`]}},
+ ()=>{const n=R(4,6),k=R(2,3),c=nz(-6,6),x=pw(-3,n),y=pw(-3,k),q=x/y,ans=q-c*(-8);const wx=-pw(3,n)/y;
+   return{q:`${sup("(−3)",n)} : ${sup("(−3)",k)} − ${p(c)}·${sup("(−2)",3)}`,ans,wr:[wx-c*(-8)===ans?-ans:wx-c*(-8),q+c*(-8),-q-c*(-8)],
+   sol:[`${sup("(−3)",n)} = ${m(x)}, ${sup("(−3)",k)} = ${m(y)}`,`${m(x)} : ${p(y)} = ${m(q)}`,`${p(c)}·${sup("(−2)",3)} = ${p(c)}·(−8) = ${m(c*-8)}`,`${m(q)} − ${p(c*-8)} = ${m(ans)}`]}},
+ ()=>{let a,b,s;do{a=nz(-6,6);b=nz(-6,6);s=(a-b)*(a-b)}while(s===0||s>81);
+   const divs=[];for(let v=2;v<=15;v++)if((3*s)%v===0)divs.push(v,-v);const c=pick(divs.length?divs:[3]);
+   const d=R(2,4),t=3*s/c,cube=pw(-d,3),ans=5-t+cube;const w1=2*s/c;
+   return{q:`5 − 3·(${m(a)} − ${p(b)})<sup>2</sup> : ${p(c)} + ${sup("(−"+d+")",3)}`,ans,
+   wr:[isInt(w1)?w1+cube:ans+6,5-t-cube,5+t+cube],
+   sol:[`Жақша: ${m(a)} − ${p(b)} = ${m(a-b)}`,`Дәреже: ${sup(p(a-b),2)} = ${s}`,`Көбейту, бөлу солдан оңға: 3·${s} = ${3*s}, ${3*s} : ${p(c)} = ${m(t)}`,`${sup("(−"+d+")",3)} = ${m(cube)}`,`5 − ${p(t)} + ${p(cube)} = ${m(ans)}`]}},
+ ()=>{const k=nzn(-7,7,[1,-1]),x=nz(-12,12),a=nz(-10,10),b=nz(-20,20),c=k*(x-a)+b;
+   const inside=a<0?`x + ${-a}`:`x − ${a}`;
+   const w1=(c+b)/k+a,w2=(c-b)/k-a;
+   return{q:`<span class="note">Теңдеуді шеш:</span>${m(k)}(${inside})${pm(b)} = ${m(c)}`,wrap:true,ans:x,
+   wr:[-x,isInt(w1)&&w1!==x?w1:x+1,isInt(w2)&&w2!==x?w2:x-2],
+   sol:[`${m(b)}-ті оң жаққа қарама-қарсы таңбамен шығарамыз: ${m(k)}(${inside}) = ${m(c)}${pm(-b)} = ${m(c-b)}`,`Екі жағын ${p(k)}-ға бөлеміз: ${inside} = ${m((c-b)/k)}`,`x = ${m((c-b)/k)}${pm(a)} = ${m(x)}`]}}
+];
+
+const BANK={1:L1,2:L2,3:L3};
+const NAMES={1:"Жеңіл",2:"Орташа",3:"Қиын"};
+const N=10;
+
+function options(ans,wr){
+  const out=[],seen=new Set([ans]);
+  for(const w of wr){const v=w===0?0:w;if(isInt(v)&&!seen.has(v)&&out.length<3){seen.add(v);out.push(v)}}
+  const extra=[-ans,ans+R(1,4),ans-R(1,4),ans+10,ans-10,ans+R(5,9)];
+  for(const w of extra){const v=w===0?0:w;if(out.length>=3)break;if(!seen.has(v)){seen.add(v);out.push(v)}}
+  return shuffle([ans,...out]);
+}
+function makeRound(l){
+  const gens=BANK[l];let order=[];
+  while(order.length<N)order=order.concat(shuffle(gens.slice()));
+  return order.slice(0,N).map(g=>{const t=g();t.opts=options(t.ans,t.wr);return t});
+}
+
+/* ---------- storage ---------- */
+const best=l=>{try{return Number(localStorage.getItem("butin-best-"+l))||0}catch(e){return 0}};
+const saveBest=(l,s)=>{try{if(s>best(l))localStorage.setItem("butin-best-"+l,String(s))}catch(e){}};
+function paintBest(){document.querySelectorAll("[data-best]").forEach(el=>{const b=best(el.dataset.best);el.textContent=b?`Ең жақсы нәтиже: ${b}/${N}`:""})}
+
+/* ---------- state & render ---------- */
+const sheet=document.getElementById("sheet");
+let S={};
+function start(l){
+  S={l,qs:makeRound(l),i:0,score:0,res:[],done:false};
+  document.querySelectorAll(".lvl").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.l==l)));
+  renderQ();
+}
+function dots(){return `<div class="dots" aria-hidden="true">${S.qs.map((_,k)=>`<span class="dot ${S.res[k]===true?"ok":S.res[k]===false?"bad":""} ${k===S.i?"now":""}"></span>`).join("")}</div>`}
+function renderQ(){
+  const t=S.qs[S.i];const keys=["А","Ә","Б","В"];
+  sheet.innerHTML=`
+   <div class="meta"><span>${NAMES[S.l]} деңгей · есеп ${S.i+1} / ${N}</span>${dots()}</div>
+   <p class="task-label">${t.wrap?"":"Есепте:"}</p>
+   <div class="expr${t.wrap?" wrapok":""}">${t.q}</div>
+   <div class="opts">${t.opts.map((o,k)=>`<button class="opt" data-v="${o}"><span class="k">${keys[k]}</span>${m(o)}</button>`).join("")}</div>
+   <div class="feedback" id="fb"></div>`;
+  sheet.querySelectorAll(".opt").forEach(b=>b.addEventListener("click",()=>answer(Number(b.dataset.v))));
+}
+function answer(v){
+  const t=S.qs[S.i];if(S.res[S.i]!==undefined)return;
+  const ok=v===t.ans;S.res[S.i]=ok;if(ok)S.score++;
+  sheet.querySelectorAll(".opt").forEach(b=>{b.disabled=true;const bv=Number(b.dataset.v);
+    if(bv===t.ans)b.classList.add("right");else if(bv===v)b.classList.add("wrong")});
+  const last=S.i===N-1;
+  const fb=document.getElementById("fb");
+  fb.innerHTML=`<p class="verdict ${ok?"ok":"bad"}">${ok?"Дұрыс!":"Қате. Дұрыс жауап: "+m(t.ans)}</p>
+   <div class="solution"><h3>Шешуі</h3><ol>${t.sol.map(s=>`<li>${s}</li>`).join("")}</ol></div>
+   <div class="actions"><button class="go" id="next">${last?"Нәтижені көру":"Келесі есеп"}</button></div>`;
+  fb.classList.add("show");
+  sheet.querySelector(".meta").outerHTML=`<div class="meta"><span>${NAMES[S.l]} деңгей · есеп ${S.i+1} / ${N}</span>${dots()}</div>`;
+  const nb=document.getElementById("next");nb.focus({preventScroll:true});
+  nb.addEventListener("click",()=>{if(last)renderEnd();else{S.i++;renderQ();sheet.scrollIntoView({block:"start",behavior:"auto"})}});
+}
+function renderEnd(){
+  saveBest(S.l,S.score);paintBest();
+  const wrong=S.qs.map((t,k)=>({t,k})).filter(o=>S.res[o.k]===false);
+  const msg=S.score===N?"Керемет — бір де қате жоқ.":S.score>=8?"Жақсы нәтиже. Қателерді төменнен қарап шық.":S.score>=5?"Негізі бар, бірақ ережелерді қайталау керек.":"Бұл деңгей әзірге қиын. Ережелерді қайталап, тағы бір рет көр.";
+  const nextL=S.l<3?S.l+1:null;
+  sheet.innerHTML=`<div class="result">
+    <p class="task-label">${NAMES[S.l]} деңгей аяқталды</p>
+    <div class="big">${S.score}/${N}</div>
+    <p>${msg}</p>
+    ${wrong.length?`<ul class="mistakes">${wrong.map(o=>`<li><span class="e">${o.t.q.replace(/<span class="note">.*?<\/span>/,"")}</span> → дұрыс жауап: <b>${m(o.t.ans)}</b></li>`).join("")}</ul>`:""}
+    <div class="actions">
+      <button class="go" id="again">Жаңа есептермен қайталау</button>
+      ${nextL&&S.score>=7?`<button class="ghost" id="up">${NAMES[nextL]} деңгейге өту</button>`:""}
+    </div></div>`;
+  document.getElementById("again").addEventListener("click",()=>start(S.l));
+  const up=document.getElementById("up");if(up)up.addEventListener("click",()=>start(nextL));
+}
+document.querySelectorAll(".lvl").forEach(b=>b.addEventListener("click",()=>start(Number(b.dataset.l))));
+paintBest();start(1);
+})();
+</script>
+</body>
+</html>
